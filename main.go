@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/Thevtok/auth/cont"
 	"github.com/dgrijalva/jwt-go"
 	"github.com/gin-gonic/gin"
 )
@@ -17,6 +18,7 @@ type Student struct {
 }
 
 func main() {
+	authMiddleware := cont.AuthMiddleware()
 	// buat gin router
 	router := gin.Default()
 
@@ -25,39 +27,12 @@ func main() {
 
 	// other routes
 	studentRouter := router.Group("/students")
-	studentRouter.Use(authMiddleware())
+	studentRouter.Use(authMiddleware)
 
 	studentRouter.GET("/", profile)
 
 	// start server
 	log.Fatal(router.Run(":8080"))
-}
-
-func authMiddleware() gin.HandlerFunc {
-	return func(c *gin.Context) {
-		tokenString := c.GetHeader("Authorization")
-
-		if tokenString == "" {
-			c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
-			c.Abort()
-			return
-		}
-
-		token, err := jwt.Parse(tokenString, func(t *jwt.Token) (any, error) {
-			return jwtKey, nil
-		})
-
-		if err != nil || !token.Valid {
-			c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
-			c.Abort()
-			return
-		}
-
-		claims := token.Claims.(jwt.MapClaims)
-		c.Set("claims", claims)
-
-		c.Next()
-	}
 }
 
 func login(c *gin.Context) {
